@@ -30,9 +30,13 @@ resource "aws_vpc" "main" {
   # Referencing the base_cidr_block variable allows the network address
   # to be changed without modifying the configuration.
   cidr_block = var.base_cidr_block
-}
 
-resource "aws_subnet" "as" {
+  tags = {
+	Name = "Dominik-Weremiuk-VPC"
+	Owner = "dominik.weremiuk"
+}
+}
+resource "aws_subnet" "dw-public" {
 
   
   # Create one subnet for each given availability zone.
@@ -49,6 +53,20 @@ resource "aws_subnet" "as" {
   # values, such as computing a subnet address. Here we create a /20 prefix for
   # each subnet, using consecutive addresses for each availability zone,
   # such as 10.1.16.0/20 .
-  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 1, count.index)
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 4, count.index)
+  tags = {
+     Name = "Dominik-Weremiuk-public_subnet"
+     Owner = "dominik.weremiuk"
 }
+}
+resource "aws_subnet" "dw-private" {
 
+  count = length(var.availability_zones)
+  availability_zone = var.availability_zones[count.index]
+  vpc_id = aws_vpc.main.id
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 4, count.index)
+  tags = {
+	Name = "Dominik-Weremiuk-public_subnet"
+	Owner = "dominik.weremiuk"
+}
+}
