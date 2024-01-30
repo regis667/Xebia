@@ -71,3 +71,42 @@ resource "aws_subnet" "dw-private" {
 	Owner = "dominik.weremiuk"
 }
 }
+
+resource "aws_internet_gateway" "gw" {
+vpc_id=aws_vpc.main.id
+tags = {
+        Name = "Dominik-Weremiuk-ig"
+        Owner = "dominik.weremiuk"
+}
+}
+
+resource "aws_route_table" "rt_public" {
+
+vpc_id=aws_vpc.main.id
+
+route {
+cidr_block=aws_vpc.main.cidr_block
+gateway_id= "local"
+}
+route {
+cidr_block="0.0.0.0/0"
+gateway_id= aws_internet_gateway.gw.id
+}
+tags ={
+Name = "Dominik-Weremiuk-public_subnet"
+Owner = "dominik.weremiuk"
+}
+}
+resource "aws_route_table" "rt_private" {
+
+vpc_id=aws_vpc.main.id
+
+route {
+cidr_block=aws_vpc.main.cidr_block
+gateway_id= "local"
+}
+tags ={
+Name = "Dominik-Weremiuk-private_subnet"
+Owner = "dominik.weremiuk"
+}
+}
