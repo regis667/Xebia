@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-#      version = "~> 1.0.4"
+ #     version = "~> 1.0.4"
     }
   }
 }
@@ -40,7 +40,7 @@ resource "aws_subnet" "dw-public" {
 
   
   # Create one subnet for each given availability zone.
-   count = length(var.availability_zones)
+  count = length(var.availability_zones)
 
   # For each subnet, use one of the specified availability zones.
   availability_zone = var.availability_zones[count.index]
@@ -53,7 +53,8 @@ resource "aws_subnet" "dw-public" {
   # values, such as computing a subnet address. Here we create a /20 prefix for
   # each subnet, using consecutive addresses for each availability zone,
   # such as 10.1.16.0/20 .
-  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 4, count.index)
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, count.index)
+  
   tags = {
      Name = "Dominik-Weremiuk-public_subnet"
      Owner = "dominik.weremiuk"
@@ -64,9 +65,9 @@ resource "aws_subnet" "dw-private" {
   count = length(var.availability_zones)
   availability_zone = var.availability_zones[count.index]
   vpc_id = aws_vpc.main.id
-  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 4, count.index)
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, count.index+2)
   tags = {
-	Name = "Dominik-Weremiuk-public_subnet"
+	Name = "Dominik-Weremiuk-private_subnet"
 	Owner = "dominik.weremiuk"
 }
 }
