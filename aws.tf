@@ -6,6 +6,13 @@ terraform {
     }
   }
 }
+variable "instance_type" {
+  default = "t2.micro"
+}
+variable "ec2_instance_name" {
+  description = "Name of the EC2 instance"
+  default     = "terraform-dw"
+}
 
 variable "aws_region" {
 default = "eu-central-1"
@@ -109,4 +116,62 @@ tags ={
 Name = "Dominik-Weremiuk-private_subnet"
 Owner = "dominik.weremiuk"
 }
+}
+
+resource "aws_route_table_association" "as_public" {
+	for_each = toset([for subnet in aws_subnet.dw-public: subnet.id])
+	route_table_id=aws_route_table.rt_public.id
+	subnet_id=each.value
+	#subnet_id=aws_subnet.dw-public[count.index]
+	#route_table_id=aws_route_table.rt_public
+}
+
+resource "aws_route_table_association" "as_private" {
+        for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
+        route_table_id=aws_route_table.rt_private.id
+        subnet_id=each.value
+        #subnet_id=aws_subnet.dw-public[count.index]
+        #route_table_id=aws_route_table.rt_public
+}
+resource "aws_s3_bucket" "dw-bucket54321" {
+  bucket = "dw-bucket54321"
+  tags ={
+	Name = "Dominik-Weremiuk-public-bucket"
+	Owner = "dominik.weremiuk"
+}
+}
+
+
+resource "aws_s3_bucket_public_access_block" "dw-bucket54321" {
+  bucket = aws_s3_bucket.dw-bucket54321.id
+
+  block_public_acls   = false
+  block_public_policy = false
+}
+resource "aws_security_group" "web_sg" {
+  name   = "HTTP and SSH"
+  vpc_id = aws_vpc.main.id
+  tags={
+	Name = "Dominik-Weremiuk-secu-group"
+	Owner= "dominik.weremiuk"
+}
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = -1
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
