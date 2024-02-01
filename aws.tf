@@ -6,6 +6,26 @@ terraform {
     }
   }
 }
+variable "aws_region" {
+default = "eu-central-1"
+}
+
+provider "aws" {
+  region  = var.aws_region
+#  profile = "890769921003_AdministratorAccess"
+  profile="xebia-sandbox"
+  default_tags {
+    tags = {
+      "managed-by" = "terraform"
+    }
+  }
+}
+
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+
+
 variable "instance_type" {
   default = "t2.micro"
 }
@@ -14,9 +34,9 @@ variable "ec2_instance_name" {
   default     = "terraform-dw"
 }
 
-variable "aws_region" {
-default = "eu-central-1"
-}
+#variable "aws_region" {
+#default = "eu-central-1"
+#}
 
 variable "base_cidr_block" {
   description = "A /16 CIDR range definition, such as 10.1.0.0/16, that the VPC will use"
@@ -29,9 +49,6 @@ variable "availability_zones" {
   default=["eu-central-1a", "eu-central-1b"]
 }
 
-provider "aws" {
-  region = var.aws_region
-}
 
 resource "aws_vpc" "main" {
   # Referencing the base_cidr_block variable allows the network address
