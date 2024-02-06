@@ -12,8 +12,8 @@ default = "eu-central-1"
 
 provider "aws" {
   region  = var.aws_region
-#  profile = "890769921003_AdministratorAccess"
-  profile="xebia-sandbox"
+  profile = "890769921003_AdministratorAccess"
+#  profile="xebia-sandbox"
   default_tags {
     tags = {
       "managed-by" = "terraform"
@@ -61,13 +61,16 @@ resource "aws_vpc" "main" {
 }
 }
 resource "aws_subnet" "dw-public" {
+    #tutaj przerobic na foreach dla a dw-public od AZ z
+    # Create one subnet for each given availability zone.
 
-  
-  # Create one subnet for each given availability zone.
-  count = length(var.availability_zones)
+  #count = length(var.availability_zones)
 
+  #w foreach bedzie .key NIE count eachkey albo each value
   # For each subnet, use one of the specified availability zones.
-  availability_zone = var.availability_zones[count.index]
+
+
+  #availability_zone = var.availability_zones[count.index]
 
   # By referencing the aws_vpc.main object, Terraform knows that the subnet
   # must be created only after the VPC is created.
@@ -77,7 +80,9 @@ resource "aws_subnet" "dw-public" {
   # values, such as computing a subnet address. Here we create a /20 prefix for
   # each subnet, using consecutive addresses for each availability zone,
   # such as 10.1.16.0/20 .
-  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, count.index)
+  for_each=toset(var.availability_zones)
+  #cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, count.index)
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, each.key)
   
   tags = {
      Name = "Dominik-Weremiuk-public_subnet"
@@ -86,10 +91,11 @@ resource "aws_subnet" "dw-public" {
 }
 resource "aws_subnet" "dw-private" {
 
-  count = length(var.availability_zones)
-  availability_zone = var.availability_zones[count.index]
+  #count = length(var.availability_zones)
+  for_each=toset(var.availability_zones)
+  #availability_zone = var.availability_zones[count.index]
   vpc_id = aws_vpc.main.id
-  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, count.index+2)
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, each.value)
   tags = {
 	Name = "Dominik-Weremiuk-private_subnet"
 	Owner = "dominik.weremiuk"
@@ -135,21 +141,23 @@ Owner = "dominik.weremiuk"
 }
 }
 
-resource "aws_route_table_association" "as_public" {
-	for_each = toset([for subnet in aws_subnet.dw-public: subnet.id])
-	route_table_id=aws_route_table.rt_public.id
-	subnet_id=each.value
-	#subnet_id=aws_subnet.dw-public[count.index]
-	#route_table_id=aws_route_table.rt_public
-}
+#resource "aws_route_table_association" "as_public" {
+#for_each = toset([for subnet in aws_subnet.dw-public: subnet.id])
+#  #for_each = aws_subnet.dw-public[each.key]
+#  for_each=toset(aws_subnet.dw-public[each.value])
+#	route_table_id=aws_route_table.rt_public[each.key]
+#	subnet_id=each.value
+#	#subnet_id=aws_subnet.dw-public[count.index]
+#	#route_table_id=aws_route_table.rt_public
+#}
 
-resource "aws_route_table_association" "as_private" {
-        for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
-        route_table_id=aws_route_table.rt_private.id
-        subnet_id=each.value
-        #subnet_id=aws_subnet.dw-public[count.index]
-        #route_table_id=aws_route_table.rt_public
-}
+#resource "aws_route_table_association" "as_private" {
+#        for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
+#        route_table_id=aws_route_table.rt_private.id
+#        subnet_id=each.value
+#        #subnet_id=aws_subnet.dw-public[count.index]
+#        #route_table_id=aws_route_table.rt_public
+#}
 resource "aws_s3_bucket" "dw-bucket54321" {
   bucket = "dw-bucket54321"
   tags ={
