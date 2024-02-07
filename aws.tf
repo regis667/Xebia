@@ -80,9 +80,10 @@ resource "aws_subnet" "dw-public" {
   # values, such as computing a subnet address. Here we create a /20 prefix for
   # each subnet, using consecutive addresses for each availability zone,
   # such as 10.1.16.0/20 .
-  for_each=toset(var.availability_zones)
+  #for_each=toset(var.availability_zones)
   #cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, count.index)
-  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, each.key)
+  for_each  = {for k, v in var.availability_zones : v => index(var.availability_zones, v)}
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, each.value)
   
   tags = {
      Name = "Dominik-Weremiuk-public_subnet"
@@ -92,10 +93,11 @@ resource "aws_subnet" "dw-public" {
 resource "aws_subnet" "dw-private" {
 
   #count = length(var.availability_zones)
-  for_each=toset(var.availability_zones)
+  #for_each=toset(var.availability_zones)
+  for_each  = {for k, v in var.availability_zones : v => index(var.availability_zones, v)}
   #availability_zone = var.availability_zones[count.index]
   vpc_id = aws_vpc.main.id
-  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, each.value)
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, each.value+2)
   tags = {
 	Name = "Dominik-Weremiuk-private_subnet"
 	Owner = "dominik.weremiuk"
@@ -141,23 +143,24 @@ Owner = "dominik.weremiuk"
 }
 }
 
-#resource "aws_route_table_association" "as_public" {
-#for_each = toset([for subnet in aws_subnet.dw-public: subnet.id])
+resource "aws_route_table_association" "as_public" {
+for_each = toset([for subnet in aws_subnet.dw-public: subnet.id])
 #  #for_each = aws_subnet.dw-public[each.key]
 #  for_each=toset(aws_subnet.dw-public[each.value])
-#	route_table_id=aws_route_table.rt_public[each.key]
-#	subnet_id=each.value
+	route_table_id=aws_route_table.rt_public.id
+	subnet_id=each.value
 #	#subnet_id=aws_subnet.dw-public[count.index]
 #	#route_table_id=aws_route_table.rt_public
-#}
+}
 
-#resource "aws_route_table_association" "as_private" {
-#        for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
-#        route_table_id=aws_route_table.rt_private.id
-#        subnet_id=each.value
-#        #subnet_id=aws_subnet.dw-public[count.index]
-#        #route_table_id=aws_route_table.rt_public
-#}
+resource "aws_route_table_association" "as_private" {
+        for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
+        route_table_id=aws_route_table.rt_private.id
+        subnet_id=each.value
+        #subnet_id=aws_subnet.dw-public[count.index]
+        #route_table_id=aws_route_table.rt_public
+}
+
 resource "aws_s3_bucket" "dw-bucket54321" {
   bucket = "dw-bucket54321"
   tags ={
