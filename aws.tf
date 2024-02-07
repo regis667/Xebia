@@ -177,7 +177,7 @@ resource "aws_s3_bucket_public_access_block" "dw-bucket54321" {
   block_public_policy = false
 }
 resource "aws_security_group" "web_sg" {
-  name   = "HTTP and SSH"
+  name   = "web_sg"
   vpc_id = aws_vpc.main.id
   tags={
 	Name = "Dominik-Weremiuk-secu-group"
@@ -202,4 +202,19 @@ resource "aws_security_group" "web_sg" {
     protocol    = -1
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+resource "aws_instance" "dw-server" {
+  ami           = "ami-02fe204d17e0189fb"
+  instance_type = "t2.micro"
+    user_data = <<EOF
+#!/bin/bash
+echo "Blablablabla bla bla!"
+EOF
+security_groups = aws_security_group.web_sg.id
+subnet_id = aws_subnet.dw-private
+  tags={
+	Name = "Dominik-Weremiuk-ec2"
+	Owner= "dominik.weremiuk"
+}
 }
