@@ -144,15 +144,18 @@ Owner = "dominik.weremiuk"
 }
 
 resource "aws_route_table_association" "as_public" {
-#for_each = {for k, v in aws_subnet.dw-public: v => aws_subnet.dw-public.id}
+#for_each = toset([for subnet in aws_subnet.dw-public: subnet.id])
+for_each = {for k, v in aws_subnet.dw-public: v => aws_subnet.dw-public.id}
+#for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
 #for_each = aws_subnet.dw-public.id
-for_each  = {for k, v in aws_subnet.dw-public[each.value] : v => index(aws_subnet.dw-public[each.key], v)}
+#for_each  = {for k, v in aws_subnet.dw-public[each.value] : v => index(aws_subnet.dw-public[each.key], v)}
 #for_each = aws_subnet.dw-public.id[each.key]
 #  for_each=toset(aws_subnet.dw-public[each.value])
 	route_table_id=aws_route_table.rt_public.id
 	subnet_id=each.value
 #	#subnet_id=aws_subnet.dw-public[count.index]
 #	#route_table_id=aws_route_table.rt_public
+
 }
 
 resource "aws_route_table_association" "as_private" {
