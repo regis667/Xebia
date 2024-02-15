@@ -234,3 +234,47 @@ subnet_id = each.value
 	Owner= "dominik.weremiuk"
 }
 }
+
+resource "aws_lb" "alb_dw" {
+  name               = "dw-lb-tf"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.web_sg.id]
+  subnets            = [for subnet in aws_subnet.dw-public : subnet.id]
+
+  enable_deletion_protection = true
+
+ # access_logs {
+ #   bucket  = aws_s3_bucket.dw-bucket54321.id
+ #   prefix  = "test-lb"
+ #   enabled = true
+ # }
+
+  tags={
+	Name = "Dominik-Weremiuk-alb"
+	Owner= "dominik.weremiuk"
+}
+}
+resource "aws_lb_target_group" "target" {
+  name     = "tf-lb-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id = aws_vpc.main.id
+}
+resource "aws_lb_target_group_attachment" "target_attach" {
+  #target_group_arn = aws_lb_target_group.target.arn
+  #for_each       = toset(var.availability_zones)
+  #target_id        = aws_instance.dw-server[each.key].id
+  #target_id = [for ec2 in aws_instance.dw-server : aws_instance.dw-server.id]
+  #port             = 80
+  for_each = {
+    for k, v in aws_instance.dw-server :
+    v.id => v
+  }
+
+  target_group_arn = aws_lb_target_group.target.arn
+  target_id        = each.value.id
+  port             = 80
+
+
+}
