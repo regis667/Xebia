@@ -74,15 +74,20 @@ resource "aws_subnet" "dw-public" {
 
   # By referencing the aws_vpc.main object, Terraform knows that the subnet
   # must be created only after the VPC is created.
-  vpc_id = aws_vpc.main.id
+ #- vpc_id = aws_vpc.main.id
 
   # Built-in functions and operators can be used for simple transformations of
   # values, such as computing a subnet address. Here we create a /20 prefix for
   # each subnet, using consecutive addresses for each availability zone,
   # such as 10.1.16.0/20 .
-  for_each=toset(var.availability_zones)
+  #-for_each=toset(var.availability_zones)
   #cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, count.index)
-  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, each.key)
+  for_each                = toset(var.availability_zones)
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, index(var.availability_zones, each.key))
+  vpc_id                  = aws_vpc.main.id
+  availability_zone       = each.key
+  map_public_ip_on_launch = true
+  
   
   tags = {
      Name = "Dominik-Weremiuk-public_subnet"
@@ -95,7 +100,7 @@ resource "aws_subnet" "dw-private" {
   for_each=toset(var.availability_zones)
   #availability_zone = var.availability_zones[count.index]
   vpc_id = aws_vpc.main.id
-  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, each.value)
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, index(var.availability_zones, each.key)+2)
   tags = {
 	Name = "Dominik-Weremiuk-private_subnet"
 	Owner = "dominik.weremiuk"
@@ -150,7 +155,11 @@ Owner = "dominik.weremiuk"
 #	#subnet_id=aws_subnet.dw-public[count.index]
 #	#route_table_id=aws_route_table.rt_public
 #}
-
+resource "aws_route_table_association" "public" {
+  for_each       = toset(var.availability_zones)
+  subnet_id      = aws_subnet.dw-public[each.key].id
+  route_table_id = aws_route_table.rt_public[each.key].id
+}
 #resource "aws_route_table_association" "as_private" {
 #        for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
 #        route_table_id=aws_route_table.rt_private.id
