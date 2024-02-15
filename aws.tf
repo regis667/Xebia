@@ -261,20 +261,20 @@ resource "aws_lb_target_group" "target" {
   protocol = "HTTP"
   vpc_id = aws_vpc.main.id
 }
-resource "aws_lb_target_group_attachment" "target_attach" {
+#resource "aws_lb_target_group_attachment" "target_attach" {
   #target_group_arn = aws_lb_target_group.target.arn
   #for_each       = toset(var.availability_zones)
   #target_id        = aws_instance.dw-server[each.key].id
   #target_id = [for ec2 in aws_instance.dw-server : aws_instance.dw-server.id]
   #port             = 80
-  for_each = {
-    for k, v in aws_instance.dw-server :
-    v.id => v
-  }
+#  for_each = {
+#    for k, v in aws_instance.dw-server :
+#    v.id => v
+#  }
+#
+#  target_group_arn = aws_lb_target_group.target.arn
+#  target_id        = each.value.id
+#  port             = 80
 
-  target_group_arn = aws_lb_target_group.target.arn
-  target_id        = each.value.id
-  port             = 80
 
-
-}
+#}
