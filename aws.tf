@@ -157,8 +157,9 @@ Owner = "dominik.weremiuk"
 #}
 resource "aws_route_table_association" "public" {
   for_each       = toset(var.availability_zones)
-  subnet_id      = aws_subnet.dw-public[each.key].id
-  route_table_id = aws_route_table.rt_public[each.key].id
+  subnet_id      = aws_subnet.dw-public[each.key].id 
+  #route_table_id = aws_route_table.rt_public[each.key].id
+  route_table_id=aws_route_table.rt_public.id
 }
 #resource "aws_route_table_association" "as_private" {
 #        for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
@@ -167,6 +168,13 @@ resource "aws_route_table_association" "public" {
 #        #subnet_id=aws_subnet.dw-public[count.index]
 #        #route_table_id=aws_route_table.rt_public
 #}
+
+resource "aws_route_table_association" "private" {
+  for_each       = toset(var.availability_zones)
+  subnet_id      = aws_subnet.dw-private[each.key].id 
+  #route_table_id = aws_route_table.rt_private[each.key].id
+  route_table_id=aws_route_table.rt_private.id
+}
 resource "aws_s3_bucket" "dw-bucket54321" {
   bucket = "dw-bucket54321"
   tags ={
@@ -208,4 +216,21 @@ resource "aws_security_group" "web_sg" {
     protocol    = -1
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+resource "aws_instance" "dw-server" {
+  ami           = "ami-02fe204d17e0189fb"
+  instance_type = "t2.micro"
+    user_data = <<EOF
+#!/bin/bash
+echo "Blablablabla bla bla!"
+EOF
+security_groups = [aws_security_group.web_sg.id]
+#subnet_id = aws_subnet.dw-private
+for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
+#subnet_id = aws_subnet.dw-private[each.value]
+subnet_id = each.value
+  tags={
+	Name = "Dominik-Weremiuk-ec2"
+	Owner= "dominik.weremiuk"
+}
 }
