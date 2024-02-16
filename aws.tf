@@ -226,9 +226,11 @@ echo "Blablablabla bla bla!"
 EOF
 security_groups = [aws_security_group.web_sg.id]
 #subnet_id = aws_subnet.dw-private
-for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
-#subnet_id = aws_subnet.dw-private[each.value]
-subnet_id = each.value
+#for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
+#for_each = toset(aws_subnet.dw-private[each_value].id)
+for_each       = toset(var.availability_zones)
+subnet_id = aws_subnet.dw-private[each.value].id
+#subnet_id = each.value
   tags={
 	Name = "Dominik-Weremiuk-ec2"
 	Owner= "dominik.weremiuk"
