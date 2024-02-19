@@ -222,14 +222,20 @@ resource "aws_instance" "dw-server" {
   instance_type = "t2.micro"
     user_data = <<EOF
 #!/bin/bash
-echo "Blablablabla bla bla!"
+sudo yum install httpd -y
+sudo yum install git -y
+sudo yum install ec2-instance-connect
+sudo systemctl enable httpd
+sudo git clone https://github.com/florient2016/myweb.git /var/www/html/web/
+sudo systemctl start httpd
 EOF
+key_name = "deployer-key"
 security_groups = [aws_security_group.web_sg.id]
 #subnet_id = aws_subnet.dw-private
 #for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
 #for_each = toset(aws_subnet.dw-private[each_value].id)
 for_each       = toset(var.availability_zones)
-subnet_id = aws_subnet.dw-private[each.value].id
+subnet_id = aws_subnet.dw-public[each.value].id
 #subnet_id = each.value
   tags={
 	Name = "Dominik-Weremiuk-ec2"
@@ -263,12 +269,12 @@ resource "aws_lb_target_group" "target" {
   protocol = "HTTP"
   vpc_id = aws_vpc.main.id
 }
-#resource "aws_lb_target_group_attachment" "target_attach" {
-  #target_group_arn = aws_lb_target_group.target.arn
-  #for_each       = toset(var.availability_zones)
-  #target_id        = aws_instance.dw-server[each.key].id
+resource "aws_lb_target_group_attachment" "target_attach" {
+  target_group_arn = aws_lb_target_group.target.arn
+  for_each       = toset(var.availability_zones)
+  target_id        = aws_instance.dw-server[each.key].id
   #target_id = [for ec2 in aws_instance.dw-server : aws_instance.dw-server.id]
-  #port             = 80
+  port             = 80
 #  for_each = {
 #    for k, v in aws_instance.dw-server :
 #    v.id => v
@@ -279,4 +285,21 @@ resource "aws_lb_target_group" "target" {
 #  port             = 80
 
 
-#}
+}
+resource "aws_lb_listener" "front_end" {
+  load_balancer_arn = aws_lb.alb_dw.arn
+  port              = "80"
+  protocol          = "HTTP"
+  #ssl_policy        = "ELBSecurityPolicy-2016-08"
+  #certificate_arn   = "arn:aws:iam::187416307283:server-certificate/test_cert_rab3wuqwgja25ct3n4jdj2tzu4"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.target.arn
+  }
+}
+
+resource "aws_key_pair" "deployer" {
+  key_name   = "deployer-key"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDZKSi0YHmTZgy/q8XsUv//oDeMiVdrKxUCv/3SpQ7tfVik2pPGWNmmYIiItevbK9Ta+DRuLdxCBzQxWXqObs1Fd+atOavyc6HIFkb/+FYRcytff2B0niVpySQ04owLe1XIVMB0Wn87Z6TZ+JaY9tELuizptr4qDBiRt58NsM5P55VZbgbPVBAC+nSVOGFDYgBw5RLjY9HQaA4uRmwH3m+Al6cLf6NDCUmAhl8XVp7JIBhrOyxLCW7brlaFlOueYSaUckJ+LJLahvRFcqp/WzY3ECWkkekpTL1eWdzDtQDjIG8PtCxoIYFN8W19VeFuMi7sYAh6C1IiLsAhNtPzK6zdNZIKHJcix0WEzCXMkDuYDY93D1reppCPTVLb5Jf7+CJyJ8k4Vi35oRJ7trqZh9XAHOwottKgCPo69AowbnsxSnG2tflGEovol/WZpMmOhO3ibaeQ1utJ46XSAlWFFxJxT87oDWQW/KlMF8JxNKZ/GjnPvX5TC9ebmY47WXNjBkU= dweremiuk@DWEREMIUK-MBP.local"
+}
