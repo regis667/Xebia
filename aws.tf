@@ -99,6 +99,7 @@ resource "aws_subnet" "dw-private" {
   #count = length(var.availability_zones)
   for_each=toset(var.availability_zones)
   #availability_zone = var.availability_zones[count.index]
+  availability_zone       = each.key
   vpc_id = aws_vpc.main.id
   cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, index(var.availability_zones, each.key)+2)
   tags = {
@@ -132,6 +133,7 @@ Name = "Dominik-Weremiuk-public_subnet"
 Owner = "dominik.weremiuk"
 }
 }
+
 resource "aws_route_table" "rt_private" {
 
 vpc_id=aws_vpc.main.id
@@ -140,6 +142,11 @@ route {
 cidr_block=aws_vpc.main.cidr_block
 gateway_id= "local"
 }
+#route {
+#cidr_block="0.0.0.0/0"
+#for_each=toset(var.availability_zones)
+#gateway_id=aws_nat_gateway.nat.*
+#}
 tags ={
 Name = "Dominik-Weremiuk-private_subnet"
 Owner = "dominik.weremiuk"
@@ -235,7 +242,7 @@ security_groups = [aws_security_group.web_sg.id]
 #for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
 #for_each = toset(aws_subnet.dw-private[each_value].id)
 for_each       = toset(var.availability_zones)
-subnet_id = aws_subnet.dw-public[each.value].id
+subnet_id = aws_subnet.dw-private[each.value].id
 #subnet_id = each.value
   tags={
 	Name = "Dominik-Weremiuk-ec2"
@@ -303,3 +310,12 @@ resource "aws_key_pair" "deployer" {
   key_name   = "deployer-key"
   public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDZKSi0YHmTZgy/q8XsUv//oDeMiVdrKxUCv/3SpQ7tfVik2pPGWNmmYIiItevbK9Ta+DRuLdxCBzQxWXqObs1Fd+atOavyc6HIFkb/+FYRcytff2B0niVpySQ04owLe1XIVMB0Wn87Z6TZ+JaY9tELuizptr4qDBiRt58NsM5P55VZbgbPVBAC+nSVOGFDYgBw5RLjY9HQaA4uRmwH3m+Al6cLf6NDCUmAhl8XVp7JIBhrOyxLCW7brlaFlOueYSaUckJ+LJLahvRFcqp/WzY3ECWkkekpTL1eWdzDtQDjIG8PtCxoIYFN8W19VeFuMi7sYAh6C1IiLsAhNtPzK6zdNZIKHJcix0WEzCXMkDuYDY93D1reppCPTVLb5Jf7+CJyJ8k4Vi35oRJ7trqZh9XAHOwottKgCPo69AowbnsxSnG2tflGEovol/WZpMmOhO3ibaeQ1utJ46XSAlWFFxJxT87oDWQW/KlMF8JxNKZ/GjnPvX5TC9ebmY47WXNjBkU= dweremiuk@DWEREMIUK-MBP.local"
 }
+resource "aws_nat_gateway" "nat" {
+  connectivity_type = "private"
+  for_each       = toset(var.availability_zones)
+  subnet_id         = aws_subnet.dw-public[each.key].id
+  tags = {
+    Name = "gw NAT"
+  }
+}
+
