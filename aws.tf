@@ -145,7 +145,7 @@ gateway_id= "local"
 #route {
 #cidr_block="0.0.0.0/0"
 #for_each=toset(var.availability_zones)
-#gateway_id=aws_nat_gateway.nat.*
+#gateway_id=aws_nat_gateway.nat
 #}
 tags ={
 Name = "Dominik-Weremiuk-private_subnet"
@@ -168,13 +168,6 @@ resource "aws_route_table_association" "public" {
   #route_table_id = aws_route_table.rt_public[each.key].id
   route_table_id=aws_route_table.rt_public.id
 }
-#resource "aws_route_table_association" "as_private" {
-#        for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
-#        route_table_id=aws_route_table.rt_private.id
-#        subnet_id=each.value
-#        #subnet_id=aws_subnet.dw-public[count.index]
-#        #route_table_id=aws_route_table.rt_public
-#}
 
 resource "aws_route_table_association" "private" {
   for_each       = toset(var.availability_zones)
@@ -189,7 +182,13 @@ resource "aws_s3_bucket" "dw-bucket54321" {
 	Owner = "dominik.weremiuk"
 }
 }
-
+resource "aws_eip" "Nat-Gateway-EIP" {
+  for_each               = toset(var.availability_zones)
+  depends_on = [
+    aws_route_table_association.public
+  ]
+  vpc = true
+}
 
 resource "aws_s3_bucket_public_access_block" "dw-bucket54321" {
   bucket = aws_s3_bucket.dw-bucket54321.id
@@ -225,29 +224,19 @@ resource "aws_security_group" "web_sg" {
   }
 }
 resource "aws_instance" "dw-server" {
+  for_each       = toset(var.availability_zones)
+  subnet_id = aws_subnet.dw-private[each.value].id
   ami           = "ami-02fe204d17e0189fb"
   instance_type = "t2.micro"
-    user_data = <<EOF
-#!/bin/bash
-sudo yum install httpd -y
-sudo yum install git -y
-sudo yum install ec2-instance-connect
-sudo systemctl enable httpd
-sudo git clone https://github.com/florient2016/myweb.git /var/www/html/web/
-sudo systemctl start httpd
-EOF
-key_name = "deployer-key"
-security_groups = [aws_security_group.web_sg.id]
-#subnet_id = aws_subnet.dw-private
-#for_each = toset([for subnet in aws_subnet.dw-private: subnet.id])
-#for_each = toset(aws_subnet.dw-private[each_value].id)
-for_each       = toset(var.availability_zones)
-subnet_id = aws_subnet.dw-private[each.value].id
-#subnet_id = each.value
+  user_data= file("init.sh")
+  key_name = "dw"
+  security_groups = [aws_security_group.web_sg.id]
+
   tags={
 	Name = "Dominik-Weremiuk-ec2"
 	Owner= "dominik.weremiuk"
 }
+depends_on=[aws_route.nat_gw]
 }
 
 resource "aws_lb" "alb_dw" {
@@ -257,7 +246,7 @@ resource "aws_lb" "alb_dw" {
   security_groups    = [aws_security_group.web_sg.id]
   subnets            = [for subnet in aws_subnet.dw-public : subnet.id]
 
-  enable_deletion_protection = true
+  enable_deletion_protection = false
 
  # access_logs {
  #   bucket  = aws_s3_bucket.dw-bucket54321.id
@@ -306,16 +295,49 @@ resource "aws_lb_listener" "front_end" {
   }
 }
 
-resource "aws_key_pair" "deployer" {
-  key_name   = "deployer-key"
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDZKSi0YHmTZgy/q8XsUv//oDeMiVdrKxUCv/3SpQ7tfVik2pPGWNmmYIiItevbK9Ta+DRuLdxCBzQxWXqObs1Fd+atOavyc6HIFkb/+FYRcytff2B0niVpySQ04owLe1XIVMB0Wn87Z6TZ+JaY9tELuizptr4qDBiRt58NsM5P55VZbgbPVBAC+nSVOGFDYgBw5RLjY9HQaA4uRmwH3m+Al6cLf6NDCUmAhl8XVp7JIBhrOyxLCW7brlaFlOueYSaUckJ+LJLahvRFcqp/WzY3ECWkkekpTL1eWdzDtQDjIG8PtCxoIYFN8W19VeFuMi7sYAh6C1IiLsAhNtPzK6zdNZIKHJcix0WEzCXMkDuYDY93D1reppCPTVLb5Jf7+CJyJ8k4Vi35oRJ7trqZh9XAHOwottKgCPo69AowbnsxSnG2tflGEovol/WZpMmOhO3ibaeQ1utJ46XSAlWFFxJxT87oDWQW/KlMF8JxNKZ/GjnPvX5TC9ebmY47WXNjBkU= dweremiuk@DWEREMIUK-MBP.local"
-}
+#resource "aws_key_pair" "dw" {
+#  key_name   = "dw"
+#  public_key= "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCHvLDmZR2AWsRyhClTAtDskIE9oKesuqXL+ChZ2cb6JoAxI0t6kodjKWkxpf3LS77AIVQOsjINuCl060CtmJP5Ty+3wn57D2glWjVut2kLQtGgl+vyBPXlIL5PxGA6QjPU/roLR+GWpxpSepbduzjOvePWyBe105l1FtcW3PJlQB3VQai3zNdgNjzd5D4muxNE/+bsoH4x6MXC5RphjsgCI2LmO/hLHSd+yOdIbfVTeY9MKaRhH/COM1SK14E677EIteFEMoExKnVTBHxFxeUJH3lwnCLcpzZONzMAa3AZhKXlNobqSHYF1PCEF5C6z6y+v6FRYOH7i6RvIOTBg9Il dw\n"
+#}
 resource "aws_nat_gateway" "nat" {
-  connectivity_type = "private"
-  for_each       = toset(var.availability_zones)
+  connectivity_type = "public"
+ for_each       = toset(var.availability_zones)
   subnet_id         = aws_subnet.dw-public[each.key].id
+  allocation_id=aws_eip.Nat-Gateway-EIP[each.key].id
   tags = {
     Name = "gw NAT"
   }
 }
 
+resource "aws_route" "nat_gw" {
+#  for_each               = toset(var.availability_zones)
+  route_table_id         = aws_route_table.rt_private.id
+  destination_cidr_block = "0.0.0.0/0"
+ nat_gateway_id         = values(aws_nat_gateway.nat)[0].id
+ depends_on = [
+    aws_nat_gateway.nat
+  ]
+}
+resource "aws_db_subnet_group" "rds-subnet-group" {
+  name       = "rds-subnet-group"
+  subnet_ids         = [for subnet in aws_subnet.dw-public: subnet.id]
+
+}
+resource "aws_db_instance" "dwdb" {
+  identifier           = "dwrds"
+  allocated_storage    = 10
+  db_subnet_group_name = aws_db_subnet_group.rds-subnet-group.id
+  db_name              = "mydb"
+  engine               = "mysql"
+  engine_version       = "5.7"
+  instance_class       = "db.t3.micro"
+  username             = "dw"
+  password             = "12345678"
+  parameter_group_name = "default.mysql5.7"
+  skip_final_snapshot  = true
+}
+#-----------------------------------------------------------
+output "instances" {
+  value       = "${aws_instance.dw-server}"
+  description = "EC2 details"
+}
