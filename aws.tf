@@ -223,6 +223,29 @@ resource "aws_security_group" "web_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+resource "aws_security_group" "db" {
+  name   = "rds sec"
+  vpc_id = aws_vpc.main.id
+  tags={
+	Name = "Dominik-Weremiuk-secu-group"
+	Owner= "dominik.weremiuk"
+}
+  ingress {
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    security_groups = [aws_security_group.web_sg.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = -1
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 resource "aws_instance" "dw-server" {
   for_each       = toset(var.availability_zones)
   subnet_id = aws_subnet.dw-private[each.value].id
@@ -238,7 +261,21 @@ resource "aws_instance" "dw-server" {
 }
 depends_on=[aws_route.nat_gw]
 }
+resource "aws_instance" "dw-bastion" {
+  #for_each       = toset(var.availability_zones)
+  subnet_id = values(aws_subnet.dw-public)[0].id
+  ami           = "ami-02fe204d17e0189fb"
+  instance_type = "t2.micro"
+  #user_data= file("init.sh")
+  key_name = "dw"
+  security_groups = [aws_security_group.web_sg.id]
 
+  tags={
+	Name = "Dominik-Weremiuk-ec-bastion"
+	Owner= "dominik.weremiuk"
+}
+depends_on=[aws_route.nat_gw]
+}
 resource "aws_lb" "alb_dw" {
   name               = "dw-lb-tf"
   internal           = false
@@ -335,6 +372,7 @@ resource "aws_db_instance" "dwdb" {
   password             = "12345678"
   parameter_group_name = "default.mysql5.7"
   skip_final_snapshot  = true
+  vpc_security_group_ids = [aws_security_group.db.id, aws_security_group.web_sg.id]
 }
 #-----------------------------------------------------------
 output "instances" {
