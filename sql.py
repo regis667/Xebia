@@ -44,4 +44,4 @@ myresult = cur.fetchall()
 #    print ("row[0]")
 for x in myresult:
       print(x)
-db.close()0
+db.close()
