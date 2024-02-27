@@ -197,7 +197,7 @@ resource "aws_s3_bucket_public_access_block" "dw-bucket54321" {
   block_public_policy = false
 }
 resource "aws_security_group" "web_sg" {
-  name   = "HTTP and SSH"
+  name   = "HTTP and SSH and flask"
   vpc_id = aws_vpc.main.id
   tags={
 	Name = "Dominik-Weremiuk-secu-group"
@@ -206,6 +206,12 @@ resource "aws_security_group" "web_sg" {
   ingress {
     from_port   = 80
     to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 5000
+    to_port     = 5000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -298,7 +304,7 @@ resource "aws_lb" "alb_dw" {
 }
 resource "aws_lb_target_group" "target" {
   name     = "tf-lb-tg"
-  port     = 80
+  port     = 5000
   protocol = "HTTP"
   vpc_id = aws_vpc.main.id
 }
