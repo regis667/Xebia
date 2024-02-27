@@ -13,6 +13,7 @@ git clone https://github.com/regis667/Xebia.git
 yum update -y
 curl -O https://bootstrap.pypa.io/get-pip.py
 python3 get-pip.py 
+cd /data/Xebia
 pip install mysql-connector-python
 pip install flask
 python sql.py
