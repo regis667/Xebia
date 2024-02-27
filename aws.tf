@@ -265,7 +265,7 @@ resource "aws_instance" "dw-server" {
 	Name = "Dominik-Weremiuk-ec2"
 	Owner= "dominik.weremiuk"
 }
-depends_on=[aws_route.nat_gw]
+depends_on=[aws_route.nat_gw, aws_db_instance.dwdb]
 }
 resource "aws_instance" "dw-bastion" {
   #for_each       = toset(var.availability_zones)
@@ -313,7 +313,7 @@ resource "aws_lb_target_group_attachment" "target_attach" {
   for_each       = toset(var.availability_zones)
   target_id        = aws_instance.dw-server[each.key].id
   #target_id = [for ec2 in aws_instance.dw-server : aws_instance.dw-server.id]
-  port             = 80
+  port             = 5000
 #  for_each = {
 #    for k, v in aws_instance.dw-server :
 #    v.id => v
