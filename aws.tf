@@ -265,7 +265,7 @@ resource "aws_instance" "dw-server" {
 	Name = "Dominik-Weremiuk-ec2"
 	Owner= "dominik.weremiuk"
 }
-depends_on=["aws_route.nat_gw", "aws_db_instance.dwdb"]
+depends_on=[aws_route.nat_gw, aws_db_instance.dwdb]
 }
 resource "aws_instance" "dw-bastion" {
   #for_each       = toset(var.availability_zones)
@@ -301,6 +301,7 @@ resource "aws_lb" "alb_dw" {
 	Name = "Dominik-Weremiuk-alb"
 	Owner= "dominik.weremiuk"
 }
+depends_on=[aws_db_instance.dwdb]
 }
 resource "aws_lb_target_group" "target" {
   name     = "tf-lb-tg"

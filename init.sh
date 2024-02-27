@@ -7,9 +7,12 @@ sudo yum install ec2-instance-connect
 systemctl enable httpd
 systemctl start httpd
 yum install python -y
+mkdir /data
+cd /data
 git clone https://github.com/regis667/Xebia.git
+yum update -y
 curl -O https://bootstrap.pypa.io/get-pip.py
-python3 get-pip.py --user
+python3 get-pip.py 
 pip install mysql-connector-python
 pip install flask
 python sql.py
