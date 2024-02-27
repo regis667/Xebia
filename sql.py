@@ -17,7 +17,7 @@ def add_print_sql():
     #cur.execute(sqldel)
     #cur.execute("CREATE DATABASE dwdb")
 
-    #cur.execute("CREATE TABLE dominiks (name VARCHAR(255), address VARCHAR(255))")
+    cur.execute("CREATE TABLE dominiks (name VARCHAR(255), address VARCHAR(255))")
     sql = "INSERT INTO dominiks (name, address) VALUES (%s, %s)"
     val = [
       ('Peter', 'Lowstreet 4'),
