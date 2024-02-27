@@ -1,4 +1,6 @@
 #!/bin/bash -xe
+exec 2>&1 1>/var/init.log
+
 sudo yum install httpd -y
 sudo yum install git -y
 sudo yum install ec2-instance-connect
