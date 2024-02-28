@@ -35,5 +35,6 @@ val = [
       ('Viola', 'Sideway 1633')
     ]
 cur.executemany(sql, val)
+db.commit()
 db.close()
 print ("database initialized")
