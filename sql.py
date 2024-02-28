@@ -55,4 +55,5 @@ app = Flask(__name__)
 def home ():
     a=add_print_sql()
     return a
+app.debug=True
 app.run()
