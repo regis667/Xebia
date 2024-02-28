@@ -272,7 +272,7 @@ resource "aws_instance" "dw-bastion" {
   subnet_id = values(aws_subnet.dw-public)[0].id
   ami           = "ami-02fe204d17e0189fb"
   instance_type = "t2.micro"
-  #user_data= file("init.sh")
+  user_data= file("initbast.sh")
   key_name = "dw"
   security_groups = [aws_security_group.web_sg.id]
 
