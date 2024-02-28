@@ -306,7 +306,7 @@ depends_on=[aws_db_instance.dwdb]
 resource "aws_lb_target_group" "target" {
   name     = "tf-lb-tg"
   port     = 5000
-  protocol = "TCP" #from HTML
+  protocol = "HTTP" #from HTML
   vpc_id = aws_vpc.main.id
 }
 resource "aws_lb_target_group_attachment" "target_attach" {
