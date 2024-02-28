@@ -16,4 +16,4 @@ python3 get-pip.py
 cd /data/Xebia
 pip install mysql-connector-python
 pip install flask
-python sql.py > /var/initsql.log
+nohup python sql.py > /var/initsql.log 2>&1 &
