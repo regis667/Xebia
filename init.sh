@@ -1,11 +1,11 @@
 #!/bin/bash -xe
 exec 2>&1 1>/var/init.log
 
-sudo yum install httpd -y
-sudo yum install git -y
-sudo yum install ec2-instance-connect
-systemctl enable httpd
-systemctl start httpd
+yum install httpd -y
+yum install git -y
+yum install ec2-instance-connect -y
+#systemctl enable httpd
+#systemctl start httpd
 yum install python -y
 mkdir /data
 cd /data
@@ -16,4 +16,4 @@ python3 get-pip.py
 cd /data/Xebia
 pip install mysql-connector-python
 pip install flask
-python sql.py > /var/initsql.log
+python sql.py >/var/initsql.log
