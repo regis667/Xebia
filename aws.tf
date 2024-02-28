@@ -351,6 +351,9 @@ resource "aws_nat_gateway" "nat" {
   tags = {
     Name = "gw NAT"
   }
+  depends_on = [
+    aws_db_instance.dwdb
+  ]
 }
 
 resource "aws_route" "nat_gw" {
