@@ -19,7 +19,7 @@ cur = db.cursor()
 
 cur.execute("CREATE TABLE dominiks (name VARCHAR(255), address VARCHAR(255))")
 sql = "INSERT INTO dominiks (name, address) VALUES (%s, %s)"
-    val = [
+val = [
       ('Peter', 'Lowstreet 4'),
       ('Amy', 'Apple st 652'),
       ('Hannah', 'Mountain 21'),
@@ -36,4 +36,4 @@ sql = "INSERT INTO dominiks (name, address) VALUES (%s, %s)"
     ]
 cur.executemany(sql, val)
 db.close()
-return "database initialized"
+print ("database initialized")

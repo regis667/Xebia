@@ -280,7 +280,7 @@ resource "aws_instance" "dw-bastion" {
 	Name = "Dominik-Weremiuk-ec-bastion"
 	Owner= "dominik.weremiuk"
 }
-depends_on=[aws_route.nat_gw]
+depends_on=[aws_route.nat_gw, aws_db_instance.dwdb]
 }
 resource "aws_lb" "alb_dw" {
   name               = "dw-lb-tf"
