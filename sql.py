@@ -27,6 +27,9 @@ def add_print_sql():
     #    print ("row[0]")
     for x in myresult:
       list.append(x)
+
+    cur.execute("SELECT COUNT(*) FROM dominiks")
+    amount=cursor.fetchone()
     db.close()
     return list
 
@@ -36,5 +39,6 @@ app = Flask(__name__)
 @app.route('/')
 def home ():
     a=add_print_sql()
+    print ("record count: ", amount)
     return a
 app.run(host="0.0.0.0")
