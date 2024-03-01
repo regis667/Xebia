@@ -22,12 +22,16 @@ def add_print_sql():
     cur.execute("SELECT * FROM dominiks")
     list=[]
     myresult = cur.fetchall()
+    cursor.execute("SELECT COUNT(*) FROM dominiks")
+    count=cur.fetchone()
+    row_count = count[0]
     # print all the first cell of all the rows
     #for row in cur.fetchall():
     #    print ("row[0]")
     for x in myresult:
       list.append(x)
     db.close()
+    
     return list
 
 
@@ -36,5 +40,6 @@ app = Flask(__name__)
 @app.route('/')
 def home ():
     a=add_print_sql()
+    print ("row count: ", row_count)
     return a
 app.run(host="0.0.0.0")
