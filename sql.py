@@ -31,7 +31,8 @@ def add_print_sql():
     for x in myresult:
       list.append(x)
     db.close()
-    print ("row count: ", row_count)
+    s="row count is: {}".format(row_count)
+    list.append(s)
     return list
 
 
