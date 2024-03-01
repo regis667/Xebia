@@ -22,7 +22,7 @@ def add_print_sql():
     cur.execute("SELECT * FROM dominiks")
     list=[]
     myresult = cur.fetchall()
-    cursor.execute("SELECT COUNT(*) FROM dominiks")
+    cur.execute("SELECT COUNT(*) FROM dominiks")
     count=cur.fetchone()
     row_count = count[0]
     # print all the first cell of all the rows
