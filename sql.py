@@ -31,7 +31,7 @@ def add_print_sql():
     for x in myresult:
       list.append(x)
     db.close()
-    
+    print ("row count: ", row_count)
     return list
 
 
@@ -40,6 +40,5 @@ app = Flask(__name__)
 @app.route('/')
 def home ():
     a=add_print_sql()
-    print ("row count: ", row_count)
     return a
 app.run(host="0.0.0.0")
