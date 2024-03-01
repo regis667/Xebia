@@ -37,4 +37,4 @@ app = Flask(__name__)
 def home ():
     a=add_print_sql()
     return a
-app.run()
+app.run(host="0.0.0.0")
