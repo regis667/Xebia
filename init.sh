@@ -4,8 +4,6 @@ exec 2>&1 1>/var/init.log
 yum install httpd -y
 yum install git -y
 yum install ec2-instance-connect -y
-#systemctl enable httpd
-#systemctl start httpd
 yum install python -y
 mkdir /data
 cd /data
