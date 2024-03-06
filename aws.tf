@@ -265,7 +265,7 @@ resource "aws_instance" "dw-server" {
 	Name = "Dominik-Weremiuk-ec2"
 	Owner= "dominik.weremiuk"
 }
-depends_on=[aws_route.nat_gw, aws_db_instance.dwdb]
+depends_on=[aws_route.nat_gw, aws_db_instance.dwdb, aws_key_pair.dw]
 }
 resource "aws_instance" "dw-bastion" {
   #for_each       = toset(var.availability_zones)
@@ -339,10 +339,10 @@ resource "aws_lb_listener" "front_end" {
   }
 }
 
-#resource "aws_key_pair" "dw" {
-#  key_name   = "dw"
-#  public_key= "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCHvLDmZR2AWsRyhClTAtDskIE9oKesuqXL+ChZ2cb6JoAxI0t6kodjKWkxpf3LS77AIVQOsjINuCl060CtmJP5Ty+3wn57D2glWjVut2kLQtGgl+vyBPXlIL5PxGA6QjPU/roLR+GWpxpSepbduzjOvePWyBe105l1FtcW3PJlQB3VQai3zNdgNjzd5D4muxNE/+bsoH4x6MXC5RphjsgCI2LmO/hLHSd+yOdIbfVTeY9MKaRhH/COM1SK14E677EIteFEMoExKnVTBHxFxeUJH3lwnCLcpzZONzMAa3AZhKXlNobqSHYF1PCEF5C6z6y+v6FRYOH7i6RvIOTBg9Il dw\n"
-#}
+resource "aws_key_pair" "dw" {
+  key_name   = "dw"
+  public_key= "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDZKSi0YHmTZgy/q8XsUv//oDeMiVdrKxUCv/3SpQ7tfVik2pPGWNmmYIiItevbK9Ta+DRuLdxCBzQxWXqObs1Fd+atOavyc6HIFkb/+FYRcytff2B0niVpySQ04owLe1XIVMB0Wn87Z6TZ+JaY9tELuizptr4qDBiRt58NsM5P55VZbgbPVBAC+nSVOGFDYgBw5RLjY9HQaA4uRmwH3m+Al6cLf6NDCUmAhl8XVp7JIBhrOyxLCW7brlaFlOueYSaUckJ+LJLahvRFcqp/WzY3ECWkkekpTL1eWdzDtQDjIG8PtCxoIYFN8W19VeFuMi7sYAh6C1IiLsAhNtPzK6zdNZIKHJcix0WEzCXMkDuYDY93D1reppCPTVLb5Jf7+CJyJ8k4Vi35oRJ7trqZh9XAHOwottKgCPo69AowbnsxSnG2tflGEovol/WZpMmOhO3ibaeQ1utJ46XSAlWFFxJxT87oDWQW/KlMF8JxNKZ/GjnPvX5TC9ebmY47WXNjBkU= dweremiuk@DWEREMIUK-MBP.local"
+}
 resource "aws_nat_gateway" "nat" {
   connectivity_type = "public"
  for_each       = toset(var.availability_zones)
