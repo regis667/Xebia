@@ -9,6 +9,7 @@ yum install ec2-instance-connect -y
 yum install python -y
 mkdir /data
 cd /data
+mkdir uploads
 git clone https://github.com/regis667/Xebia.git
 yum update -y
 curl -O https://bootstrap.pypa.io/get-pip.py
