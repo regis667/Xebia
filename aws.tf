@@ -318,7 +318,7 @@ resource "aws_lb_target_group" "target" {
   vpc_id = aws_vpc.main.id
 }
 resource "aws_lb_target_group" "targets3" {
-  name     = "tf-lb-tg"
+  name     = "tf-lb-tgs3"
   port     = 4000
   protocol = "HTTP" #from HTML
   vpc_id = aws_vpc.main.id
