@@ -9,7 +9,6 @@ yum install ec2-instance-connect -y
 yum install python -y
 mkdir /data
 cd /data
-mkdir uploads
 git clone https://github.com/regis667/Xebia.git
 yum update -y
 curl -O https://bootstrap.pypa.io/get-pip.py
@@ -19,4 +18,5 @@ pip install mysql-connector-python
 pip install flask
 pip install boto3
 nohup python sql.py > /var/initsql.log 2>&1 &
+mkdir uploads
 ( python3 s3app.py > /dev/null 2> /dev/null & ); exit
