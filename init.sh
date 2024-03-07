@@ -17,6 +17,6 @@ cd /data/Xebia
 pip install mysql-connector-python
 pip install flask
 pip install boto3
-nohup python sql.py > /var/initsql.log 2>&1 &
 mkdir uploads
+nohup python sql.py > /var/initsql.log 2>&1 &
 ( python3 s3app.py > /dev/null 2> /dev/null & ); exit
