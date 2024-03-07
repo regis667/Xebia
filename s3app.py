@@ -6,7 +6,7 @@ import boto3
 
 
 app = Flask(__name__)
-UPLOAD_FOLDER = "uploads"
+#UPLOAD_FOLDER = "uploads"
 BUCKET = "dw-bucket54321"
 
 #if __name__ == '__main__':
@@ -26,8 +26,10 @@ def home():
 def upload():
     if request.method == "POST":
         f = request.files['file']
-        f.save(os.path.join(UPLOAD_FOLDER, secure_filename(f.filename)))
-        upload_file(f"uploads/{f.filename}", BUCKET)
+#        f.save(os.path.join(UPLOAD_FOLDER, secure_filename(f.filename)))
+        f.save(os.path.join(secure_filename(f.filename)))
+#        upload_file(f"uploads/{f.filename}", BUCKET)
+        upload_file(f"{f.filename}", BUCKET)
         return redirect("/")
 
 app.run(host="0.0.0.0", port=4000, debug=True)
