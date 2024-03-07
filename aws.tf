@@ -288,7 +288,7 @@ resource "aws_instance" "dw-bastion" {
 	Name = "Dominik-Weremiuk-ec-bastion"
 	Owner= "dominik.weremiuk"
 }
-depends_on=[aws_route.nat_gw, aws_db_instance.dwdb]
+depends_on=[aws_route.nat_gw, aws_db_instance.dwdb, aws_key_pair.dw]
 }
 resource "aws_lb" "alb_dw" {
   name               = "dw-lb-tf"
@@ -371,7 +371,7 @@ resource "aws_lb_listener" "front_ends3" {
 }
 resource "aws_key_pair" "dw" {
   key_name   = "dw"
-  public_key= file("dw.pem")
+  public_key= "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDZKSi0YHmTZgy/q8XsUv//oDeMiVdrKxUCv/3SpQ7tfVik2pPGWNmmYIiItevbK9Ta+DRuLdxCBzQxWXqObs1Fd+atOavyc6HIFkb/+FYRcytff2B0niVpySQ04owLe1XIVMB0Wn87Z6TZ+JaY9tELuizptr4qDBiRt58NsM5P55VZbgbPVBAC+nSVOGFDYgBw5RLjY9HQaA4uRmwH3m+Al6cLf6NDCUmAhl8XVp7JIBhrOyxLCW7brlaFlOueYSaUckJ+LJLahvRFcqp/WzY3ECWkkekpTL1eWdzDtQDjIG8PtCxoIYFN8W19VeFuMi7sYAh6C1IiLsAhNtPzK6zdNZIKHJcix0WEzCXMkDuYDY93D1reppCPTVLb5Jf7+CJyJ8k4Vi35oRJ7trqZh9XAHOwottKgCPo69AowbnsxSnG2tflGEovol/WZpMmOhO3ibaeQ1utJ46XSAlWFFxJxT87oDWQW/KlMF8JxNKZ/GjnPvX5TC9ebmY47WXNjBkU= dweremiuk@DWEREMIUK-MBP.local"
 }
 resource "aws_nat_gateway" "nat" {
   connectivity_type = "public"
