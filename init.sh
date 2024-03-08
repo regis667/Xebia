@@ -20,4 +20,4 @@ pip install boto3
 #mkdir uploads
 #chmod -R 777 uploads
 nohup python sql.py > /var/initsql.log 2>&1 &
-( python3 s3app.py > /dev/null 2> /dev/null & ); exit
+( python3 s3app.py >  /var/s3app.log 2>&1 & ); exit
