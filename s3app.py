@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import os
 from flask import Flask, render_template, request, redirect, send_file
 from s3_functions import upload_file
