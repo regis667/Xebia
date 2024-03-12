@@ -138,3 +138,34 @@ resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.dw-private-ecs[each.key].id 
   route_table_id=aws_route_table.rt_private-ecs.id
 }
+
+
+resource "aws_launch_template" "ecs_lt" {
+ name_prefix   = "ecs-template"
+ image_id      = "ami-062c116e449466e7f"
+ instance_type = var.instance_type
+
+ key_name               = "dw"
+ vpc_security_group_ids = [aws_security_group.web_sg.id]
+ iam_instance_profile {
+   name = "ecsInstanceRole"
+ }
+
+ block_device_mappings {
+   device_name = "/dev/xvda"
+   ebs {
+     volume_size = 30
+     volume_type = "gp2"
+   }
+ }
+
+ tag_specifications {
+   resource_type = "instance"
+   tags = {
+     Name = "ecs-instance"
+     Owner= "dw"
+   }
+ }
+
+ user_data = filebase64("${path.module}/ecs.sh")
+}
