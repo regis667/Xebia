@@ -138,7 +138,27 @@ resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.dw-private-ecs[each.key].id 
   route_table_id=aws_route_table.rt_private-ecs.id
 }
+resource "aws_security_group" "db" {
+  name   = "rds sec"
+  vpc_id = aws_vpc.main-ecs.id
+  tags={
+	Name = "Dominik-Weremiuk-secu-group"
+	Owner= "dominik.weremiuk"
+}
+  ingress {
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    security_groups = [aws_security_group.web_sg.id]
+  }
 
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = -1
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
 resource "aws_security_group" "web_sg" {
   name   = "HTTP and SSH and flask"
   vpc_id = aws_vpc.main-ecs.id
@@ -225,4 +245,49 @@ resource "aws_autoscaling_group" "ecs_asg" {
    value               = true
    propagate_at_launch = true
  }
+}
+resource "aws_db_subnet_group" "rds-subnet-group" {
+  name       = "rds-subnet-group"
+  subnet_ids         = [for subnet in aws_subnet.dw-public-ecs: subnet.id]
+
+}
+resource "aws_db_instance" "dwdb" {
+  identifier           = "dwrds"
+  allocated_storage    = 10
+  db_subnet_group_name = aws_db_subnet_group.rds-subnet-group.id
+  db_name              = "mydb"
+  engine               = "mysql"
+  engine_version       = "5.7"
+  instance_class       = "db.t3.micro"
+  username             = "dw"
+  password             = "12345678"
+  parameter_group_name = "default.mysql5.7"
+  skip_final_snapshot  = true
+  vpc_security_group_ids = [aws_security_group.db.id, aws_security_group.web_sg.id]
+}
+
+resource "aws_iam_policy" "bucket_policy" {
+  name        = "my-bucket-policy"
+  path        = "/"
+  description = "Allow "
+
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Sid" : "VisualEditor0",
+        "Effect" : "Allow",
+        "Action" : [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket",
+          "s3:DeleteObject"
+        ],
+        "Resource" : [
+          "arn:aws:s3:::*/*",
+          "arn:aws:s3:::my-bucket-name"
+        ]
+      }
+    ]
+  })
 }
