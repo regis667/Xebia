@@ -337,6 +337,30 @@ resource "aws_lb_target_group" "targets3" {
    path = "/"
  }
 }
+resource "aws_lb_listener" "front_end" {
+  load_balancer_arn = aws_lb.alb_dw.arn
+  port              = "80"
+  protocol          = "HTTP"
+  #ssl_policy        = "ELBSecurityPolicy-2016-08"
+  #certificate_arn   = "arn:aws:iam::187416307283:server-certificate/test_cert_rab3wuqwgja25ct3n4jdj2tzu4"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.target.arn
+  }
+}
+resource "aws_lb_listener" "front_ends3" {
+  load_balancer_arn = aws_lb.alb_dw.arn
+  port              = "4000"
+  protocol          = "HTTP"
+  #ssl_policy        = "ELBSecurityPolicy-2016-08"
+  #certificate_arn   = "arn:aws:iam::187416307283:server-certificate/test_cert_rab3wuqwgja25ct3n4jdj2tzu4"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.targets3.arn
+  }
+}
 #-----------------------//-----------------------
 #----------------------ECS-CLUSTER---------------
 resource "aws_ecs_cluster" "ecs_cluster" {
@@ -370,3 +394,34 @@ resource "aws_ecs_cluster_capacity_providers" "dw-ecs-cluster-prov" {
 }
 #------------------------//-----------------------
 #-----------------------TASK-DEF----------------
+resource "aws_ecs_task_definition" "ecs_task_definition" {
+ family             = "my-ecs-task"
+ network_mode       = "awsvpc"
+ execution_role_arn = "arn:aws:iam::532199187081:role/ecsTaskExecutionRole"
+ cpu                = 256
+ runtime_platform {
+   operating_system_family = "LINUX"
+   cpu_architecture        = "X86_64"
+ }
+ container_definitions = jsonencode([
+   {
+     name      = "docker-ecs"
+     image     = "docker.io/regis667/terraform-ecs:dev"
+     cpu       = 256
+     memory    = 512
+     essential = true
+     portMappings = [
+       {
+         containerPort = 5000
+         hostPort      = 5000
+         protocol      = "tcp"
+       },
+       {
+        containerPort = 4000
+        hostPort = 4000
+        protocol = "tcp"
+       }
+     ]
+   }
+ ])
+}
