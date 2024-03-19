@@ -265,7 +265,13 @@ resource "aws_db_instance" "dwdb" {
   skip_final_snapshot  = true
   vpc_security_group_ids = [aws_security_group.db.id, aws_security_group.web_sg.id]
 }
-
+resource "aws_s3_bucket" "dw-bucket54321" {
+  bucket = "dw-bucket54321"
+  tags ={
+	Name = "Dominik-Weremiuk-public-bucket"
+	Owner = "dominik.weremiuk"
+}
+}
 resource "aws_iam_policy" "bucket_policy" {
   name        = "my-bucket-policy"
   path        = "/"
@@ -290,4 +296,40 @@ resource "aws_iam_policy" "bucket_policy" {
       }
     ]
   })
+}
+resource "aws_lb" "alb_dw" {
+  name               = "dw-lb-tf"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.web_sg.id]
+  subnets            = [for subnet in aws_subnet.dw-public : subnet.id]
+
+  enable_deletion_protection = false
+
+ # access_logs {
+ #   bucket  = aws_s3_bucket.dw-bucket54321.id
+ #   prefix  = "test-lb"
+ #   enabled = true
+ # }
+
+  tags={
+	Name = "Dominik-Weremiuk-alb"
+	Owner= "dominik.weremiuk"
+}
+depends_on=[aws_db_instance.dwdb]
+}
+resource "aws_lb_target_group" "target" {
+  name     = "tf-lb-tg"
+  port     = 5000
+  protocol = "HTTP" #from HTML
+  vpc_id = aws_vpc.main.id
+}
+resource "aws_lb_target_group" "targets3" {
+  name     = "tf-lb-tgs3"
+  port     = 4000
+  protocol = "HTTP" #from HTML
+  vpc_id = aws_vpc.main.id
+}
+resource "aws_ecs_cluster" "ecs_cluster" {
+ name = "my-ecs-cluster"
 }
