@@ -246,6 +246,7 @@ resource "aws_autoscaling_group" "ecs_asg" {
    propagate_at_launch = true
  }
 }
+
 resource "aws_db_subnet_group" "rds-subnet-group" {
   name       = "rds-subnet-group"
   subnet_ids         = [for subnet in aws_subnet.dw-public-ecs: subnet.id]
@@ -323,6 +324,7 @@ resource "aws_lb_target_group" "target" {
   name     = "tf-lb-tg"
   port     = 5000
   protocol = "HTTP" #from HTML
+  target_type = "ip"
   vpc_id = aws_vpc.main-ecs.id
    health_check {
    path = "/"
@@ -332,6 +334,7 @@ resource "aws_lb_target_group" "targets3" {
   name     = "tf-lb-tgs3"
   port     = 4000
   protocol = "HTTP" #from HTML
+  target_type = "ip"
   vpc_id = aws_vpc.main-ecs.id
    health_check {
    path = "/"
@@ -397,12 +400,13 @@ resource "aws_ecs_cluster_capacity_providers" "dw-ecs-cluster-prov" {
 resource "aws_ecs_task_definition" "ecs_task_definition" {
  family             = "my-ecs-task"
  network_mode       = "awsvpc"
- execution_role_arn = "arn:aws:iam::532199187081:role/ecsTaskExecutionRole"
+ execution_role_arn = "arn:aws:iam::890769921003:role/ecsTaskExecutionRole"
  cpu                = 256
  runtime_platform {
    operating_system_family = "LINUX"
    cpu_architecture        = "X86_64"
  }
+  depends_on = [aws_lb.alb_dw]
  container_definitions = jsonencode([
    {
      name      = "docker-ecs"
@@ -414,6 +418,11 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
        {
          containerPort = 5000
          hostPort      = 5000
+         protocol      = "tcp"
+       },
+       {
+         containerPort = 80
+         hostPort      = 80
          protocol      = "tcp"
        },
        {
