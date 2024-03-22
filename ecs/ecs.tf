@@ -409,8 +409,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   depends_on = [aws_lb.alb_dw]
  container_definitions = jsonencode([
    {
-     name      = "docker-ecs"
-     image     = "docker.io/regis667/terraform-ecs:dev"
+     name      = "terraform-ecs"
+     image     = "regis667/terraform-ecs:final"
      cpu       = 256
      memory    = 512
      essential = true
@@ -462,12 +462,12 @@ resource "aws_ecs_service" "ecs_service" {
 
  load_balancer {
    target_group_arn = aws_lb_target_group.target.arn
-   container_name   = "docker-ecs"
+   container_name   = "terraform-ecs"
    container_port   = 80
  }
 load_balancer {
    target_group_arn = aws_lb_target_group.targets3.arn
-   container_name   = "docker-ecs"
+   container_name   = "terraform-ecs"
    container_port   = 4000
  }
  depends_on = [aws_autoscaling_group.ecs_asg]
