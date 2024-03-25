@@ -11,14 +11,14 @@ db = mysql.connector.connect(host="dwrds.cgpzlgzs9ybi.eu-central-1.rds.amazonaws
 
     # you must create a Cursor object. It will let
     #  you execute all the queries you need
-cur = db.cursor()
+cur = db.cursor(buffered=True)
     #sqldel = "DROP TABLE dominiks"
 
  #cur.execute(sqldel)
  #cur.execute("CREATE DATABASE dwdb")
 try:
     cur.execute("SELECT * FROM dominiks")
-     
+    print("database found!")
 except sqlite3.OperationalError:
     print("No such table: dominiks")
     if(sqlite3.OperationalError): # if this error occurs
