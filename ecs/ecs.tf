@@ -366,8 +366,23 @@ resource "aws_lb_listener" "front_ends3" {
 }
 #-----------------------//-----------------------
 #----------------------ECS-CLUSTER---------------
+resource "aws_kms_key" "kms" {
+  description             = "kms"
+  deletion_window_in_days = 7
+}
 resource "aws_ecs_cluster" "ecs_cluster" {
  name = "my-ecs-cluster"
+  configuration {
+    execute_command_configuration {
+      kms_key_id = aws_kms_key.kms.arn
+      logging    = "OVERRIDE"
+  log_configuration {
+    
+        cloud_watch_encryption_enabled = true
+        cloud_watch_log_group_name     = aws_cloudwatch_log_group.ecs-log.name
+      }
+    }
+  }
 }
 
 resource "aws_ecs_capacity_provider" "ecs_capacity_provider" {
@@ -414,6 +429,12 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
      cpu       = 256
      memory    = 512
      essential = true
+     logDriver = "awslogs"
+     options = {
+       "awslogs-group"         = aws_cloudwatch_log_group.ecs-log.name
+       "awslogs-region"        = var.aws_region
+       "awslogs-stream-prefix" = "ecs"
+     }
      portMappings = [
        {
          containerPort = 5000
@@ -433,6 +454,9 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
      ]
    }
  ])
+}
+resource "aws_cloudwatch_log_group" "ecs-log" {
+  name = "ecs-log"
 }
 
 resource "aws_ecs_service" "ecs_service" {
