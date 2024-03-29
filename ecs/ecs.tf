@@ -1,3 +1,4 @@
+#rozbic na stacki
 terraform {
   required_providers {
     aws = {
@@ -9,7 +10,6 @@ terraform {
 variable "aws_region" {
 default = "eu-central-1"
 }
-
 provider "aws" {
   region  = var.aws_region
 #  profile = "890769921003_AdministratorAccess"
@@ -126,7 +126,7 @@ Owner = "dominik.weremiuk"
 }
 }
 
-
+#sprawdzic czy to w ogole ma sens 
 resource "aws_route_table_association" "public" {
   for_each       = toset(var.availability_zones)
   subnet_id      = aws_subnet.dw-public-ecs[each.key].id 
@@ -159,6 +159,7 @@ resource "aws_security_group" "db" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+#Dodac secu oddzielnie dla ecs-service
 resource "aws_security_group" "web_sg" {
   name   = "HTTP and SSH and flask"
   vpc_id = aws_vpc.main-ecs.id
@@ -198,6 +199,7 @@ resource "aws_security_group" "web_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 resource "aws_launch_template" "ecs_lt" {
  name_prefix   = "ecs-template"
  image_id      = "ami-062c116e449466e7f"
@@ -230,7 +232,8 @@ resource "aws_launch_template" "ecs_lt" {
 
 resource "aws_autoscaling_group" "ecs_asg" {
  #for_each       = toset(var.availability_zones)
- vpc_zone_identifier = [for subnet in aws_subnet.dw-public-ecs: subnet.id]
+ #poprawic na private dla ec2
+ vpc_zone_identifier = [for subnet in aws_subnet.dw-private-ecs: subnet.id]
  desired_capacity    = 2
  max_size            = 3
  min_size            = 1
@@ -277,7 +280,7 @@ resource "aws_iam_policy" "bucket_policy" {
   name        = "my-bucket-policy"
   path        = "/"
   description = "Allow "
-
+#poprawic - json w json, sprawdz funkcja jsonecode
   policy = jsonencode({
     "Version" : "2012-10-17",
     "Statement" : [
@@ -330,16 +333,16 @@ resource "aws_lb_target_group" "target" {
    path = "/"
  }
 }
-resource "aws_lb_target_group" "targets3" {
-  name     = "tf-lb-tgs3"
-  port     = 4000
-  protocol = "HTTP" #from HTML
-  target_type = "ip"
-  vpc_id = aws_vpc.main-ecs.id
-   health_check {
-   path = "/"
- }
-}
+#resource "aws_lb_target_group" "targets3" {
+#  name     = "tf-lb-tgs3"
+#  port     = 4000
+#  protocol = "HTTP" #from HTML
+#  target_type = "ip"
+#  vpc_id = aws_vpc.main-ecs.id
+#   health_check {
+#   path = "/"
+# }
+#}
 resource "aws_lb_listener" "front_end" {
   load_balancer_arn = aws_lb.alb_dw.arn
   port              = "80"
@@ -352,18 +355,18 @@ resource "aws_lb_listener" "front_end" {
     target_group_arn = aws_lb_target_group.target.arn
   }
 }
-resource "aws_lb_listener" "front_ends3" {
-  load_balancer_arn = aws_lb.alb_dw.arn
-  port              = "4000"
-  protocol          = "HTTP"
+#resource "aws_lb_listener" "front_ends3" {
+#  load_balancer_arn = aws_lb.alb_dw.arn
+#  port              = "4000"
+#  protocol          = "HTTP"
   #ssl_policy        = "ELBSecurityPolicy-2016-08"
   #certificate_arn   = "arn:aws:iam::187416307283:server-certificate/test_cert_rab3wuqwgja25ct3n4jdj2tzu4"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.targets3.arn
-  }
-}
+#
+#  default_action {
+#    type             = "forward"
+#    target_group_arn = aws_lb_target_group.targets3.arn
+#  }
+#}
 #-----------------------//-----------------------
 #----------------------ECS-CLUSTER---------------
 resource "aws_kms_key" "kms" {
@@ -395,7 +398,7 @@ resource "aws_ecs_capacity_provider" "ecs_capacity_provider" {
      maximum_scaling_step_size = 1000
      minimum_scaling_step_size = 1
      status                    = "ENABLED"
-     target_capacity           = 3
+     target_capacity           = 2
    }
  }
 }
@@ -411,6 +414,7 @@ resource "aws_ecs_cluster_capacity_providers" "dw-ecs-cluster-prov" {
  }
 }
 #------------------------//-----------------------
+#Dorobic ECR
 #-----------------------TASK-DEF----------------
 resource "aws_ecs_task_definition" "ecs_task_definition" {
  family             = "my-ecs-task"
@@ -425,7 +429,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
  container_definitions = jsonencode([
    {
      name      = "terraform-ecs"
-     image     = "regis667/terraform-ecs:final"
+     image     = "regis667/terraform-ecs:sql"
+     #image=hello-world
      cpu       = 256
      memory    = 512
      essential = true
@@ -457,8 +462,13 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
 }
 resource "aws_cloudwatch_log_group" "ecs-log" {
   name = "ecs-log"
+  
+  #TU WSTAW STREAM
 }
-
+resource "aws_cloudwatch_log_stream" "ecs" {
+  name           = "ecs"
+  log_group_name = aws_cloudwatch_log_group.ecs-log.name
+}
 resource "aws_ecs_service" "ecs_service" {
  name            = "ecs-service"
  cluster         = aws_ecs_cluster.ecs_cluster.id
@@ -466,7 +476,9 @@ resource "aws_ecs_service" "ecs_service" {
  desired_count   = 2
 
  network_configuration {
-   subnets         = [for subnet in aws_subnet.dw-public-ecs : subnet.id]
+  #bylo public
+   #subnets         = [for subnet in aws_subnet.dw-private-ecs : subnet.id]
+   subnets = [aws_subnet.dw-private-ecs[*].id]
    security_groups = [aws_security_group.web_sg.id]
  }
 
@@ -487,13 +499,13 @@ resource "aws_ecs_service" "ecs_service" {
  load_balancer {
    target_group_arn = aws_lb_target_group.target.arn
    container_name   = "terraform-ecs"
-   container_port   = 80
+   container_port   = 5000
  }
-load_balancer {
-   target_group_arn = aws_lb_target_group.targets3.arn
-   container_name   = "terraform-ecs"
-   container_port   = 4000
- }
- depends_on = [aws_autoscaling_group.ecs_asg]
+#load_balancer {
+#   target_group_arn = aws_lb_target_group.targets3.arn
+#   container_name   = "terraform-ecs"
+#   container_port   = 4000
+# }
+# depends_on = [aws_autoscaling_group.ecs_asg]
 }
 
