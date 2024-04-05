@@ -49,7 +49,20 @@ variable "availability_zones" {
   default=["eu-central-1a", "eu-central-1b"]
 }
 
+resource "aws_instance" "dw-bastion" {
+  #for_each       = toset(var.availability_zones)
+  subnet_id = values(aws_subnet.dw-public-ecs)[0].id
+  ami           = "ami-02fe204d17e0189fb"
+  instance_type = "t2.micro"
+  user_data= file("initbast.sh")
+  key_name = "dw"
+  security_groups = [aws_security_group.web_sg.id]
 
+  tags={
+	Name = "Dominik-Weremiuk-ec-bastion"
+	Owner= "dominik.weremiuk"
+}
+}
 resource "aws_vpc" "main-ecs" {
   # Referencing the base_cidr_block variable allows the network address
   # to be changed without modifying the configuration.
@@ -191,7 +204,13 @@ resource "aws_security_group" "web_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
+ingress {
+  description = "Allow ephemeral ports"
+  from_port   = 49153
+  to_port     = 65535
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
   egress {
     from_port   = 0
     to_port     = 0
@@ -233,7 +252,8 @@ resource "aws_launch_template" "ecs_lt" {
 resource "aws_autoscaling_group" "ecs_asg" {
  #for_each       = toset(var.availability_zones)
  #poprawic na private dla ec2
- vpc_zone_identifier = [for subnet in aws_subnet.dw-private-ecs: subnet.id]
+ #edytowane na public
+ vpc_zone_identifier = [for subnet in aws_subnet.dw-public-ecs: subnet.id]
  desired_capacity    = 2
  max_size            = 3
  min_size            = 1
@@ -268,6 +288,7 @@ resource "aws_db_instance" "dwdb" {
   parameter_group_name = "default.mysql5.7"
   skip_final_snapshot  = true
   vpc_security_group_ids = [aws_security_group.db.id, aws_security_group.web_sg.id]
+  depends_on=[aws_instance.dw-bastion]
 }
 resource "aws_s3_bucket" "dw-bucket54321" {
   bucket = "dw-bucket54321"
@@ -333,16 +354,16 @@ resource "aws_lb_target_group" "target" {
    path = "/"
  }
 }
-#resource "aws_lb_target_group" "targets3" {
-#  name     = "tf-lb-tgs3"
-#  port     = 4000
-#  protocol = "HTTP" #from HTML
-#  target_type = "ip"
-#  vpc_id = aws_vpc.main-ecs.id
-#   health_check {
-#   path = "/"
-# }
-#}
+resource "aws_lb_target_group" "targets3" {
+  name     = "tf-lb-tgs3"
+  port     = 4000
+  protocol = "HTTP" #from HTML
+  target_type = "ip"
+  vpc_id = aws_vpc.main-ecs.id
+   health_check {
+   path = "/"
+ }
+}
 resource "aws_lb_listener" "front_end" {
   load_balancer_arn = aws_lb.alb_dw.arn
   port              = "80"
@@ -355,18 +376,18 @@ resource "aws_lb_listener" "front_end" {
     target_group_arn = aws_lb_target_group.target.arn
   }
 }
-#resource "aws_lb_listener" "front_ends3" {
-#  load_balancer_arn = aws_lb.alb_dw.arn
-#  port              = "4000"
-#  protocol          = "HTTP"
-  #ssl_policy        = "ELBSecurityPolicy-2016-08"
-  #certificate_arn   = "arn:aws:iam::187416307283:server-certificate/test_cert_rab3wuqwgja25ct3n4jdj2tzu4"
+resource "aws_lb_listener" "front_ends3" {
+  load_balancer_arn = aws_lb.alb_dw.arn
+  port              = "5000"
+  protocol          = "HTTP"
+ # ssl_policy        = "ELBSecurityPolicy-2016-08"
+ #certificate_arn   = "arn:aws:iam::187416307283:server-certificate/test_cert_rab3wuqwgja25ct3n4jdj2tzu4"
 #
-#  default_action {
-#    type             = "forward"
-#    target_group_arn = aws_lb_target_group.targets3.arn
-#  }
-#}
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.targets3.arn
+  }
+}
 #-----------------------//-----------------------
 #----------------------ECS-CLUSTER---------------
 resource "aws_kms_key" "kms" {
@@ -429,7 +450,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
  container_definitions = jsonencode([
    {
      name      = "terraform-ecs"
-     image     = "regis667/terraform-ecs:sql"
+     image     = "public.ecr.aws/ablachowicz-public-ecr-reg/dw:sql"
      #image=hello-world
      cpu       = 256
      memory    = 512
@@ -445,21 +466,50 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
          containerPort = 5000
          hostPort      = 5000
          protocol      = "tcp"
-       },
-       {
-         containerPort = 80
-         hostPort      = 80
-         protocol      = "tcp"
-       },
-       {
-        containerPort = 4000
-        hostPort = 4000
-        protocol = "tcp"
        }
      ]
    }
  ])
 }
+
+
+resource "aws_ecs_task_definition" "ecs_task_definition_s3" {
+ family             = "my-ecs-task"
+ network_mode       = "awsvpc"
+ execution_role_arn = "arn:aws:iam::890769921003:role/ecsTaskExecutionRole"
+ cpu                = 256
+ runtime_platform {
+   operating_system_family = "LINUX"
+   cpu_architecture        = "X86_64"
+ }
+  depends_on = [aws_lb.alb_dw]
+ container_definitions = jsonencode([
+   {
+     name      = "terraform-ecs"
+     image     = "public.ecr.aws/ablachowicz-public-ecr-reg/dw:s3"
+     #image=hello-world
+     cpu       = 256
+     memory    = 512
+     essential = true
+     logDriver = "awslogs"
+     options = {
+       "awslogs-group"         = aws_cloudwatch_log_group.ecs-log.name
+       "awslogs-region"        = var.aws_region
+       "awslogs-stream-prefix" = "ecs"
+     }
+     portMappings = [
+       {
+         containerPort = 4000
+         hostPort      = 4000
+         protocol      = "tcp"
+       }
+       
+
+     ]
+   }
+ ])
+}
+
 resource "aws_cloudwatch_log_group" "ecs-log" {
   name = "ecs-log"
   
@@ -477,8 +527,9 @@ resource "aws_ecs_service" "ecs_service" {
 
  network_configuration {
   #bylo public
-   #subnets         = [for subnet in aws_subnet.dw-private-ecs : subnet.id]
-   subnets = [aws_subnet.dw-private-ecs[*].id]
+  #bylo private
+   subnets         = [for subnet in aws_subnet.dw-public-ecs : subnet.id]
+  # subnets = [aws_subnet.dw-private-ecs[*].id]
    security_groups = [aws_security_group.web_sg.id]
  }
 
@@ -501,6 +552,7 @@ resource "aws_ecs_service" "ecs_service" {
    container_name   = "terraform-ecs"
    container_port   = 5000
  }
+  depends_on = [aws_autoscaling_group.ecs_asg]
 #load_balancer {
 #   target_group_arn = aws_lb_target_group.targets3.arn
 #   container_name   = "terraform-ecs"
@@ -508,4 +560,42 @@ resource "aws_ecs_service" "ecs_service" {
 # }
 # depends_on = [aws_autoscaling_group.ecs_asg]
 }
+resource "aws_ecs_service" "ecs_service_s3" {
+ name            = "ecs-service_s3"
+ cluster         = aws_ecs_cluster.ecs_cluster.id
+ task_definition = aws_ecs_task_definition.ecs_task_definition_s3.arn
+ desired_count   = 2
 
+ network_configuration {
+  #bylo public
+   subnets         = [for subnet in aws_subnet.dw-public-ecs : subnet.id]
+  # subnets = [aws_subnet.dw-private-ecs[*].id]
+   security_groups = [aws_security_group.web_sg.id]
+ }
+
+ force_new_deployment = true
+ placement_constraints {
+   type = "distinctInstance"
+ }
+
+ triggers = {
+   redeployment = timestamp()
+ }
+
+ capacity_provider_strategy {
+   capacity_provider = aws_ecs_capacity_provider.ecs_capacity_provider.name
+   weight            = 100
+ }
+
+ load_balancer {
+   target_group_arn = aws_lb_target_group.target.arn
+   container_name   = "terraform-ecs"
+   container_port   = 4000
+ }
+#load_balancer {
+#   target_group_arn = aws_lb_target_group.targets3.arn
+#   container_name   = "terraform-ecs"
+#   container_port   = 4000
+# }
+# depends_on = [aws_autoscaling_group.ecs_asg]
+}
