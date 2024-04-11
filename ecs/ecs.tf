@@ -10,10 +10,6 @@ terraform {
 
 
 
-
-
-
-
 resource "aws_launch_template" "ecs_lt" {
  name_prefix   = "ecs-template"
  image_id      = "ami-062c116e449466e7f"
@@ -52,7 +48,7 @@ resource "aws_autoscaling_group" "ecs_asg" {
  desired_capacity    = 2
  max_size            = 3
  min_size            = 1
-
+depends_on=[aws_launch_template.ecs_lt]
  launch_template {
    id      = aws_launch_template.ecs_lt.id
    version = "$Latest"
